@@ -22,20 +22,10 @@ threading.Thread()
 Cada hilo ejecuta la funcion encargada de atender al cliente
 ## Ejecucion
 #Servidor
-python3 proy-1-server.py
+python3 proy-server.py
 
 #Cliente
-python3 proy-1-client.py
+python3 proy-client.py
 
 ## Diagrama flujo
-Cliente →
-   
-Socket TCP →
-   
-Servidor →
-   
-Thread →
-   
-Ejecucion comando →
-   
-Respuesta
+Cliente →Socket TCP →Servidor →Thread →Ejecucion comando →Respuesta

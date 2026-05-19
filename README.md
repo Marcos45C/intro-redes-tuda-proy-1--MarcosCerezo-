@@ -28,14 +28,14 @@ python3 proy-1-server.py
 python3 proy-1-client.py
 
 ## Diagrama flujo
-Cliente
-   ↓
-Socket TCP
-   ↓
-Servidor
-   ↓
-Thread
-   ↓
-Ejecución comando
-   ↓
+Cliente →
+   
+Socket TCP →
+   
+Servidor →
+   
+Thread →
+   
+Ejecucion comando →
+   
 Respuesta

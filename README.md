@@ -24,7 +24,7 @@ Cada hilo ejecuta la funcion encargada de atender al cliente
 #Servidor
 python3 proy-1-server.py
 
-# Cliente
+#Cliente
 python3 proy-1-client.py
 
 ## Diagrama flujo

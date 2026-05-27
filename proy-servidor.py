@@ -1,8 +1,9 @@
 
 import socket
 import threading
+#Permite interactuar con el sistema operativo.
 import os
-
+#Se usa para mostrar fechas legibles cpn ls 
 from datetime import datetime
 
 HOST = '0.0.0.0'
@@ -11,12 +12,13 @@ PORT = 65000
 usuarios={
     "marcos":"marcos","jere":"jere","seba":"seba","lucas1":"lucas1","lucas":"lucas","abi":"abi","mat":"mat","profe":"profe",
 }
-MAXCLIENTES = 1
+MAXCLIENTES = 3
 
+#para comandos who , expulsion y contar clientes activos
 clientes_conectados = {}
 
 
-## auxiliares para ver el peso
+## auxiliares para ver el peso, paso de 1048576 a 1.0 MB, lo uso en ls -lh
 def tamano(size):
     for unidad in ['B', 'KB', 'MB', 'GB']:
         if size < 1024:
@@ -25,6 +27,7 @@ def tamano(size):
 
     return f"{size:.1f} TB"
     
+#muestro aca nombre, tamaño, fecha modificación
 def ls_l(ruta="."):
     salida = []
 
@@ -33,6 +36,7 @@ def ls_l(ruta="."):
         path = os.path.join(ruta, nombre)
 
         try:
+            #para obtener info del archivo os.stat
             stat = os.stat(path)
 
             fecha = datetime.fromtimestamp(
@@ -71,6 +75,7 @@ def ls_lh(ruta="."):
 
     return "\n".join(salida)
 
+#aca corro un hilo independiente para que el servidor haga comandos 
 def consola_admin():
 
     while True:
@@ -141,9 +146,8 @@ def expulsar_usuario(nombre):
         cliente = clientes_conectados[nombre]
 
         cliente.send(
-            "[SERVIDOR] Has sido expulsado".encode("utf-8")
+            "##SERVIDOR## has sido echao".encode("utf-8")
         )
-
         cliente.close()
 
         del clientes_conectados[nombre]
@@ -168,17 +172,17 @@ def ejecutar_comando(comando):
         return (
             "\n COMANDOS DISPONIBLES \n"
             "---------------------\n"
-            "help  -> muestra esta ayuda\n"
-            "pwd      -> directorio actual\n"
-            "ls       -> listar contenido\n"
-            "ls ruta   -> listar ruta específica\n"
-            "ls -l       -> listado detallado\n"
-            "ls -lh      -> listado detallado legible\n"
-            "mkdir nombre    -> crear directorio\n"
-            "cat archivo       -> mostrar contenido\n"
-            "exit  -> salir\n"
-            "kick -> ejem marcos\n"
-            "who -> quienes estan en la red"
+            "help  = muestra esta ayuda\n"
+            "pwd  =directorio actual\n"
+            "ls  = listar contenido\n"
+            "ls ruta  = listar ruta específica\n"
+            "ls -l   =listado detallado\n"
+            "ls -lh   =listado detallado legible\n"
+            "mkdir nombre  =crear directorio\n"
+            "cat archivo =mostrar contenido\n"
+            "exit  =salir\n"
+            "kick = ejem marcos\n"
+            "who = quienes estan en la red"
         )
 
     #
@@ -384,21 +388,24 @@ def atender_cliente(conn, addr):
 #servidor
 
 def iniciar_servidor():
-
+    #creo los sockets TCP
     server = socket.socket(
         socket.AF_INET,
         socket.SOCK_STREAM
     )
-
+    #asocio el socket al puerto
     server.bind((HOST, PORT))
-
-    server.listen(5)
+    #me pongo a escuchar
+    server.listen(MAXCLIENTES)
 
     print(f"[SERVER] Escuchando en {HOST}:{PORT}")
 
+    #hilo del admin para echar
+    #ademas me permite escribir mientras esta funcionando el servidor
     admin_thread = threading.Thread(
         target=consola_admin,
         daemon=True
+        #marca que el hilo es secundario y se cierra automaticamente 
     )
 
     admin_thread.start()
@@ -416,7 +423,7 @@ def iniciar_servidor():
                 )
             conn.close()
             continue
-
+            #creo hilos por clientes 
         thread = threading.Thread(
                 target=atender_cliente,
                 args=(conn, addr)
@@ -424,6 +431,7 @@ def iniciar_servidor():
 
         thread.start()
 
+        #muestro la cantidad de hilos activos
         print(
                 f"[HILOS ACTIVOS] {threading.active_count() - 1}"
             )

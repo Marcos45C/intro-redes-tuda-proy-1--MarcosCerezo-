@@ -2,7 +2,7 @@ import socket
 #es para que no sea vea la clave je
 from getpass import getpass
 
-HOST = '192.168.1.20'   
+HOST = '10.7.224.12'   
 PORT = 65000
 
 
@@ -20,7 +20,7 @@ def iniciar_cliente():
         usuario = input("Usuario: ")
         client.send(usuario.encode("utf-8"))
 
-        password = getpass("Contraseña: ")
+        password = input("Contraseña: ")
         client.send(password.encode("utf-8"))
 
         login = client.recv(1024).decode("utf-8")
@@ -33,7 +33,7 @@ def iniciar_cliente():
         ####
         
         #entrada
-        bienvenida = client.recv(4096).decode("utf-8")
+        bienvenida = client.recv(1024).decode("utf-8")
 
         print(bienvenida)
 
@@ -41,7 +41,7 @@ def iniciar_cliente():
             comando = input("shell> ")
 
             client.send(comando.encode("utf-8"))
-            respuesta = client.recv(4096).decode("utf-8")
+            respuesta = client.recv(1024).decode("utf-8")
 
             print("\n" + respuesta + "\n")
             if comando.lower() == "exit":

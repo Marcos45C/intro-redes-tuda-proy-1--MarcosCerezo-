@@ -11,6 +11,8 @@ PORT = 65000
 usuarios={
     "marcos":"marcos","jere":"jere","seba":"seba","lucas1":"lucas1","lucas":"lucas","abi":"abi","mat":"mat","profe":"profe",
 }
+MAXCLIENTES = 1
+
 clientes_conectados = {}
 
 
@@ -93,6 +95,12 @@ def consola_admin():
 
                 for usuario in clientes_conectados:
                     print("-", usuario)
+
+
+        elif cmd == "contar":
+            print(
+                f"Clientes conectados: {len(clientes_conectados)}/{MAXCLIENTES}"
+                )
 
         elif cmd == "kick":
 
@@ -282,9 +290,9 @@ def ejecutar_comando(comando):
     return "ERROR: comando no válido. Escriba 'help'"
 
 
-# ==========================
-# CLIENTE
-# ==========================
+
+# Cliente
+
 
 def atender_cliente(conn, addr):
 
@@ -324,6 +332,7 @@ def atender_cliente(conn, addr):
         conn.send("LOGIN_OK".encode("utf-8"))
 
         #cuando ingresa un nuevo uusario lo guardo
+        #cliente conectado
         clientes_conectados[usuario] = conn
 
 
@@ -372,9 +381,7 @@ def atender_cliente(conn, addr):
         print(f"[DESCONECTADO] {addr}")
 
 
-# ==========================
-# SERVIDOR
-# ==========================
+#servidor
 
 def iniciar_servidor():
 
@@ -398,16 +405,28 @@ def iniciar_servidor():
 
     while True:
         conn, addr = server.accept()
+        # CONTROL DE LIMITE
+        if len(clientes_conectados) >= MAXCLIENTES:
+                #caso que fue rechazado
+            print(
+                f"[RECHAZADO] {addr} - servidor lleno"
+            )
+            conn.send(
+                    "Servidor lleno. Intente más tarde.".encode("utf-8")
+                )
+            conn.close()
+            continue
+
         thread = threading.Thread(
-            target=atender_cliente,
-            args=(conn, addr)
-        )
+                target=atender_cliente,
+                args=(conn, addr)
+            )
 
         thread.start()
 
         print(
-            f"[HILOS ACTIVOS] {threading.active_count() - 1}"
-        )
+                f"[HILOS ACTIVOS] {threading.active_count() - 1}"
+            )
 
 
 if __name__ == "__main__":

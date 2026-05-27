@@ -303,6 +303,7 @@ def atender_cliente(conn, addr):
 
     print(f"[NUEVA CONEXION] {addr}")
 
+    #para que no se caigo todo si se va un cliente 
     try:
 
         # LOGIN
@@ -312,6 +313,7 @@ def atender_cliente(conn, addr):
         password = conn.recv(1024).decode("utf-8").strip()
         #print(usuario ,"separado",password)
 
+        #verifico el usuario dentro del diccionario 
         if usuario not in usuarios:
 
             conn.send("LOGIN_ERROR".encode("utf-8"))
@@ -321,7 +323,7 @@ def atender_cliente(conn, addr):
             print(f"LOGIN FALLIDO# {addr}")
 
             return
-
+        #si esta mal al contraseña o es diferente al usuario
         if usuarios[usuario] != password:
 
             conn.send("LOGIN_ERROR".encode("utf-8"))
@@ -331,10 +333,10 @@ def atender_cliente(conn, addr):
             print(f"[LOGIN_FALLIDO] {addr}")
 
             return
-
+        #si paso todo ok
         conn.send("LOGIN_OK".encode("utf-8"))
 
-        #cuando ingresa un nuevo uusario lo guardo
+        #cuando ingresa un nuevo uusario lo guardo en el diccionario extra
         #cliente conectado
         clientes_conectados[usuario] = conn
 
@@ -343,8 +345,8 @@ def atender_cliente(conn, addr):
 
         bienvenida = (
             f"\n Bienvenido {usuario}\n"
-            "Shell Remoto TUDA\n"
-            "Escriba 'help' para ver comandos\n"
+            "shell Remoto TUDA\n"
+            "escriba 'help' para ver comandos\n"
         )
 
         conn.send(bienvenida.encode("utf-8"))
@@ -353,25 +355,28 @@ def atender_cliente(conn, addr):
 
             data = conn.recv(1024).decode("utf-8").strip()
 
+            #cliente se desconecta
             if not data:
                 break
 
+            #muestro al usuario lo que mando y su nombre 
             print(f"[{usuario}] {data}")
 
+            #si sale el usuario
             if data.lower() == "exit":
-
                 conn.send(
                     "Conexión cerrada".encode("utf-8")
                 )
-
                 break
 
+                #aca llamo a la funcion ejercutar_comando y hace lo que le pidieron, ls,pwd etc
             respuesta = ejecutar_comando(data)
 
+            #envia al cliente la respuesta
             conn.send(
                 respuesta.encode("utf-8")
             )
-
+            #aca captura errores , cliente desconectado ,red caida
     except Exception as e:
 
         print(f"[ERROR] {addr}: {e}")

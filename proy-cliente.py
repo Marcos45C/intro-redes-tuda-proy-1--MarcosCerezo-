@@ -22,7 +22,7 @@ def iniciar_cliente():
 
         password = input("Contraseña: ")
         client.send(password.encode("utf-8"))
-
+        #print(usuario, "sepaerado",password)
         login = client.recv(1024).decode("utf-8")
 
         if login != "LOGIN_OK":

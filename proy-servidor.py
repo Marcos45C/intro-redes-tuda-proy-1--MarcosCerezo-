@@ -296,8 +296,6 @@ def ejecutar_comando(comando):
 
 
 # Cliente
-
-
 def atender_cliente(conn, addr):
 
     #evita errores
@@ -312,6 +310,7 @@ def atender_cliente(conn, addr):
         usuario = conn.recv(1024).decode("utf-8").strip()
 
         password = conn.recv(1024).decode("utf-8").strip()
+        #print(usuario ,"separado",password)
 
         if usuario not in usuarios:
 
@@ -319,7 +318,7 @@ def atender_cliente(conn, addr):
 
             conn.close()
 
-            print(f"[LOGIN FALLIDO] {addr}")
+            print(f"LOGIN FALLIDO# {addr}")
 
             return
 
@@ -329,7 +328,7 @@ def atender_cliente(conn, addr):
 
             conn.close()
 
-            print(f"[LOGIN FALLIDO] {addr}")
+            print(f"[LOGIN_FALLIDO] {addr}")
 
             return
 
@@ -343,7 +342,7 @@ def atender_cliente(conn, addr):
         print(f"[LOGIN OK] {usuario} - {addr}")
 
         bienvenida = (
-            f"\nBienvenido {usuario}\n"
+            f"\n Bienvenido {usuario}\n"
             "Shell Remoto TUDA\n"
             "Escriba 'help' para ver comandos\n"
         )

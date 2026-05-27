@@ -1,7 +1,13 @@
 import socket
+#es para que no sea vea la clave je
+from getpass import getpass
 
-HOST = '192.168.50.10'   
+HOST = '192.168.1.20'   
 PORT = 65000
+
+
+
+
 def iniciar_cliente():
     client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     try:
@@ -9,6 +15,23 @@ def iniciar_cliente():
         client.connect((HOST, PORT))
 
         print("[CONECTADO AL SERVIDOR]\n")
+        
+        #pantalla de login del cli
+        usuario = input("Usuario: ")
+        client.send(usuario.encode("utf-8"))
+
+        password = getpass("Contraseña: ")
+        client.send(password.encode("utf-8"))
+
+        login = client.recv(1024).decode("utf-8")
+
+        if login != "LOGIN_OK":
+            print("Usuario o contraseña incorrectos")
+            return
+
+        print("login exitoso")
+        ####
+        
         #entrada
         bienvenida = client.recv(4096).decode("utf-8")
 

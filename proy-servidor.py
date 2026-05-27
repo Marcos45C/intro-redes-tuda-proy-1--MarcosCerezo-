@@ -11,6 +11,8 @@ PORT = 65000
 usuarios={
     "marcos":"marcos","jere":"jere","seba":"seba","lucas1":"lucas1","lucas":"lucas","abi":"abi","mat":"mat","profe":"profe",
 }
+clientes_conectados = {}
+
 
 ## auxiliares para ver el peso
 def tamano(size):
@@ -20,6 +22,7 @@ def tamano(size):
         size /= 1024
 
     return f"{size:.1f} TB"
+    
 def ls_l(ruta="."):
     salida = []
 
@@ -66,8 +69,82 @@ def ls_lh(ruta="."):
 
     return "\n".join(salida)
 
-###
+def consola_admin():
 
+    while True:
+
+        comando = input("admin> ").strip()
+
+        partes = comando.split()
+
+        if len(partes) == 0:
+            continue
+
+        cmd = partes[0].lower()
+
+        if cmd == "who":
+
+            if not clientes_conectados:
+                print("No hay usuarios conectados")
+
+            else:
+
+                print("\nUsuarios conectados:")
+
+                for usuario in clientes_conectados:
+                    print("-", usuario)
+
+        elif cmd == "kick":
+
+            if len(partes) < 2:
+                print("Uso: kick usuario")
+                continue
+
+            usuario = partes[1]
+
+            if usuario not in clientes_conectados:
+                print("Usuario no conectado")
+                continue
+
+            try:
+
+                conn = clientes_conectados[usuario]
+
+                conn.send(
+                    "[SERVIDOR] Has sido expulsado".encode("utf-8")
+                )
+
+                conn.close()
+
+                print(f"{usuario} expulsado")
+
+            except Exception as e:
+
+                print(e)
+
+###para expulsar
+def expulsar_usuario(nombre):
+
+    if nombre not in clientes_conectados:
+        return "Usuario no conectado"
+
+    try:
+
+        cliente = clientes_conectados[nombre]
+
+        cliente.send(
+            "[SERVIDOR] Has sido expulsado".encode("utf-8")
+        )
+
+        cliente.close()
+
+        del clientes_conectados[nombre]
+
+        return f"Usuario {nombre} expulsado"
+
+    except Exception as e:
+
+        return f"ERROR: {e}"
 
 def ejecutar_comando(comando):
 
@@ -83,18 +160,33 @@ def ejecutar_comando(comando):
         return (
             "\n COMANDOS DISPONIBLES \n"
             "---------------------\n"
-            "help                 -> muestra esta ayuda\n"
-            "pwd                  -> directorio actual\n"
-            "ls                   -> listar contenido\n"
-            "ls ruta              -> listar ruta específica\n"
-            "ls -l                -> listado detallado\n"
-            "ls -lh               -> listado detallado legible\n"
-            "mkdir nombre         -> crear directorio\n"
-            "cat archivo          -> mostrar contenido\n"
-            "exit                 -> salir\n"
+            "help  -> muestra esta ayuda\n"
+            "pwd      -> directorio actual\n"
+            "ls       -> listar contenido\n"
+            "ls ruta   -> listar ruta específica\n"
+            "ls -l       -> listado detallado\n"
+            "ls -lh      -> listado detallado legible\n"
+            "mkdir nombre    -> crear directorio\n"
+            "cat archivo       -> mostrar contenido\n"
+            "exit  -> salir\n"
+            "kick -> ejem marcos\n"
+            "who -> quienes estan en la red"
         )
 
-    # 
+    #
+    elif cmd == "kick":
+        if len(partes) < 2:
+            return "Uso: kick usuario"
+        return expulsar_usuario(partes[1])
+
+
+    elif cmd == "who":
+        if not clientes_conectados:
+            return "No hay usuarios conectados"
+        return "\n".join(clientes_conectados.keys())
+
+    #
+    
     elif cmd == "pwd":
 
         return os.getcwd()
@@ -196,6 +288,9 @@ def ejecutar_comando(comando):
 
 def atender_cliente(conn, addr):
 
+    #evita errores
+    usuario = None
+
     print(f"[NUEVA CONEXION] {addr}")
 
     try:
@@ -227,6 +322,10 @@ def atender_cliente(conn, addr):
             return
 
         conn.send("LOGIN_OK".encode("utf-8"))
+
+        #cuando ingresa un nuevo uusario lo guardo
+        clientes_conectados[usuario] = conn
+
 
         print(f"[LOGIN OK] {usuario} - {addr}")
 
@@ -266,7 +365,8 @@ def atender_cliente(conn, addr):
         print(f"[ERROR] {addr}: {e}")
 
     finally:
-
+        if usuario in clientes_conectados:
+            del clientes_conectados[usuario]
         conn.close()
 
         print(f"[DESCONECTADO] {addr}")
@@ -289,10 +389,15 @@ def iniciar_servidor():
 
     print(f"[SERVER] Escuchando en {HOST}:{PORT}")
 
+    admin_thread = threading.Thread(
+        target=consola_admin,
+        daemon=True
+    )
+
+    admin_thread.start()
+
     while True:
-
         conn, addr = server.accept()
-
         thread = threading.Thread(
             target=atender_cliente,
             args=(conn, addr)

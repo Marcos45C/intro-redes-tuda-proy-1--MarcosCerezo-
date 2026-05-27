@@ -2,7 +2,7 @@ import socket
 #es para que no sea vea la clave je
 from getpass import getpass
 
-HOST = '192.168.1.34'   
+HOST = '192.168.1.20'   
 PORT = 65000
 
 

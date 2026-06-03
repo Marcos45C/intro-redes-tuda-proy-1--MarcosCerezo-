@@ -15,6 +15,8 @@ PORT = 65000
 
 MAXCLIENTES = 5
 
+lock_clientes = threading.Lock()
+
 #para comandos who , expulsion y contar clientes activos
 clientes_conectados = {}
 
@@ -457,8 +459,8 @@ def atender_cliente(conn, addr):
         print(f"[ERROR] {addr}: {e}")
 
     finally:
-        if usuario in clientes_conectados:
-            with lock_clientes:
+        with lock_clientes:
+            if usuario in clientes_conectados:
                 del clientes_conectados[usuario] #####
         conn.close()
 
@@ -468,60 +470,74 @@ def atender_cliente(conn, addr):
 #servidor
 
 def iniciar_servidor():
-    #creo los sockets TCP
+
+    # creo los sockets TCP
     server = socket.socket(
         socket.AF_INET,
         socket.SOCK_STREAM
     )
-    #asocio el socket al puerto
+
+    # asocio el socket al puerto
     server.bind((HOST, PORT))
-    #me pongo a escuchar
+
+    # me pongo a escuchar
     server.listen(MAXCLIENTES)
 
     print(f"[SERVER] Escuchando en {HOST}:{PORT}")
 
-    #hilo del admin para echar
-    #ademas me permite escribir mientras esta funcionando el servidor
     admin_thread = threading.Thread(
         target=consola_admin,
         daemon=True
-        #marca que el hilo es secundario y se cierra automaticamente 
     )
 
     admin_thread.start()
+
     try:
+
         while True:
+
             conn, addr = server.accept()
+
             # CONTROL DE LIMITE
-            if len(clientes_conectados) >= MAXCLIENTES:
-                    #caso que fue rechazado
+            with lock_clientes:
+
+                servidor_lleno = (
+                    len(clientes_conectados) >= MAXCLIENTES
+                )
+
+            if servidor_lleno:
+
                 print(
                     f"[RECHAZADO] {addr} - servidor lleno"
                 )
+
                 conn.send(
-                        "Servidor lleno. Intente más tarde.".encode("utf-8")
-                    )
-                conn.close()
-                continue
-                #creo hilos por clientes 
-            thread = threading.Thread(
-                    target=atender_cliente,
-                    args=(conn, addr)
+                    "Servidor lleno. Intente más tarde.".encode("utf-8")
                 )
+
+                conn.close()
+
+                continue
+
+            # creo hilo para el cliente
+            thread = threading.Thread(
+                target=atender_cliente,
+                args=(conn, addr)
+            )
 
             thread.start()
 
-            #muestro la cantidad de hilos activos
             print(
-                    f"[HILOS ACTIVOS] {threading.active_count() - 1}"
-                )
+                f"[HILOS ACTIVOS] {threading.active_count() - 1}"
+            )
+
     except KeyboardInterrupt:
 
         print("\n[APAGANDO SERVIDOR]")
 
     finally:
-        server.close()
-    
 
+        server.close()
+        
 if __name__ == "__main__":
     iniciar_servidor()

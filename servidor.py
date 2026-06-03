@@ -6,17 +6,41 @@ import os
 #Se usa para mostrar fechas legibles cpn ls 
 from datetime import datetime
 
+import sqlite3
+import bcrypt
+
 HOST = '0.0.0.0'
 PORT = 65000
 
-usuarios={
-    "marcos":"marcos","jere":"jere","seba":"seba","lucas1":"lucas1","lucas":"lucas","abi":"abi","mat":"mat","profe":"profe",
-}
+
 MAXCLIENTES = 5
 
 #para comandos who , expulsion y contar clientes activos
 clientes_conectados = {}
 
+def validar_usuario(usuario, password):
+
+    conn = sqlite3.connect("usuarios.db")
+    cursor = conn.cursor()
+
+    cursor.execute(
+        "SELECT password FROM usuarios WHERE username=?",
+        (usuario,)
+    )
+
+    resultado = cursor.fetchone()
+
+    conn.close()
+
+    if resultado is None:
+        return False
+
+    hash_guardado = resultado[0]
+
+    return bcrypt.checkpw(
+        password.encode(),
+        hash_guardado.encode()
+    )
 
 ## auxiliares para ver el peso, paso de 1048576 a 1.0 MB, lo uso en ls -lh
 def tamano(size):
@@ -355,7 +379,7 @@ def atender_cliente(conn, addr):
     #para que no se caigo todo si se va un cliente 
     try:
 
-        # LOGIN
+        #   
 
         usuario = conn.recv(1024).decode("utf-8").strip()
 
@@ -363,25 +387,20 @@ def atender_cliente(conn, addr):
         #print(usuario ,"separado",password)
 
         #verifico el usuario dentro del diccionario 
-        if usuario not in usuarios:
-
+        if not validar_usuario(usuario, password):
             conn.send("LOGIN_ERROR".encode("utf-8"))
-
             conn.close()
-
-            print(f"LOGIN FALLIDO# {addr}")
-
+            #print(f"LOGIN FALLIDO# {addr}")
             return
         #si esta mal al contraseña o es diferente al usuario
-        if usuarios[usuario] != password:
+        #if usuarios[usuario] != password:
+            #conn.send("LOGIN_ERROR".encode("utf-8"))
+            #conn.close()
+            #print(f"[LOGIN_FALLIDO] {addr}")
+            #return
+        
 
-            conn.send("LOGIN_ERROR".encode("utf-8"))
 
-            conn.close()
-
-            print(f"[LOGIN_FALLIDO] {addr}")
-
-            return
         #si paso todo ok
         conn.send("LOGIN_OK".encode("utf-8"))
 

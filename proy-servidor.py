@@ -387,7 +387,9 @@ def atender_cliente(conn, addr):
 
         #cuando ingresa un nuevo uusario lo guardo en el diccionario extra
         #cliente conectado
-        clientes_conectados[usuario] = conn
+        lock_clientes = threading.Lock() ##aca agregue la exclusion mutua 
+        with lock_clientes:
+            clientes_conectados[usuario] = conn ####
 
 
         print(f"[LOGIN OK] {usuario} - {addr}")
@@ -437,7 +439,8 @@ def atender_cliente(conn, addr):
 
     finally:
         if usuario in clientes_conectados:
-            del clientes_conectados[usuario]
+            with lock_clientes:
+                del clientes_conectados[usuario] #####
         conn.close()
 
         print(f"[DESCONECTADO] {addr}")

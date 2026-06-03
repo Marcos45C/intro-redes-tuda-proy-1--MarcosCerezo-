@@ -12,7 +12,7 @@ PORT = 65000
 usuarios={
     "marcos":"marcos","jere":"jere","seba":"seba","lucas1":"lucas1","lucas":"lucas","abi":"abi","mat":"mat","profe":"profe",
 }
-MAXCLIENTES = 3
+MAXCLIENTES = 5
 
 #para comandos who , expulsion y contar clientes activos
 clientes_conectados = {}
@@ -79,10 +79,15 @@ def ls_lh(ruta="."):
 def consola_admin():
 
     while True:
+        try:
 
-        comando = input("admin> ").strip()
-
+            comando = input("admin> ").strip()
+        except (EOFError, KeyboardInterrupt):
+            print("\n[CERRANDO CONSOLA ADMIN]")
+            break
+        
         partes = comando.split()
+
 
         if len(partes) == 0:
             continue
@@ -158,12 +163,12 @@ def expulsar_usuario(nombre):
 
         return f"ERROR: {e}"
 
-def ejecutar_comando(comando):
+def ejecutar_comando(comando,directorio_actual):
 
     partes = comando.split()
 
     if len(partes) == 0:
-        return "Comando vacío"
+        return "Comando vacío",directorio_actual
 
     cmd = partes[0].lower()
 
@@ -183,45 +188,75 @@ def ejecutar_comando(comando):
             "exit  =salir\n"
             "kick = ejem marcos\n"
             "who = quienes estan en la red"
-        )
+            "cd carpeta => cambiar directorio\n"
+        ),directorio_actual
 
     #
     elif cmd == "kick":
         if len(partes) < 2:
-            return "Uso: kick usuario"
-        return expulsar_usuario(partes[1])
+            return "Uso: kick usuario",directorio_actual
+        return expulsar_usuario(partes[1]),directorio_actual
 
 
+    #elif cmd == "who":
+     #   if not clientes_conectados:
+      #      return "No hay usuarios conectados"
+       # return "\n".join(clientes_conectados.keys())
     elif cmd == "who":
         if not clientes_conectados:
-            return "No hay usuarios conectados"
-        return "\n".join(clientes_conectados.keys())
+            return "No hay usuarios conectados", directorio_actual
 
+        return "\n".join(clientes_conectados.keys()), directorio_actual
     #
+        # CD
+    elif cmd == "cd":
+
+        if len(partes) < 2:
+            return "ERROR: falta directorio", directorio_actual
+
+        nueva_ruta = os.path.join(
+            directorio_actual,
+            partes[1]
+        )
+
+        nueva_ruta = os.path.abspath(nueva_ruta)
+
+        if not os.path.isdir(nueva_ruta):
+            return "ERROR: directorio inexistente", directorio_actual
+
+        directorio_actual = nueva_ruta
+
+        return f"Directorio cambiado a:\n{directorio_actual}", directorio_actual
     
     elif cmd == "pwd":
 
-        return os.getcwd()
+        #return os.getcwd()
+        #ya no queres el directorio global, solo del cliente
+        return directorio_actual, directorio_actual
 
     # MKDIR
     elif cmd == "mkdir":
 
         if len(partes) < 2:
-            return "ERROR: falta nombre del directorio"
+            return "ERROR: falta nombre del directorio",directorio_actual
 
         try:
+            #os.mkdir(partes[1])
+            ruta = os.path.join(
+                directorio_actual,
+                partes[1]
+                )
+            os.mkdir(ruta)
 
-            os.mkdir(partes[1])
-
-            return f"Directorio '{partes[1]}' creado correctamente"
+            return f"Directorio '{partes[1]}' creado correctamente", directorio_actual
 
         except FileExistsError:
 
-            return "ERROR: el directorio ya existe"
+            return "ERROR: el directorio ya existe", directorio_actual
 
         except Exception as e:
 
-            return f"ERROR: {e}"
+            return f"ERROR: {e}",directorio_actual
 
     # 
     elif cmd == "ls":
@@ -230,74 +265,88 @@ def ejecutar_comando(comando):
 
             if len(partes) == 1:
 
-                archivos = os.listdir()
+                archivos = os.listdir(directorio_actual)
 
                 if not archivos:
-                    return "Directorio vacío"
+                    return "Directorio vacío",directorio_actual
 
-                return "\n".join(archivos)
+                return "\n".join(archivos), directorio_actual
 
             elif partes[1] == "-l":
-
-                return ls_l()
-
+                #return ls_l()
+                return ls_l(directorio_actual), directorio_actual
             elif partes[1] == "-lh":
-
-                return ls_lh()
-
+                #return ls_lh()
+                return ls_lh(directorio_actual), directorio_actual
             else:
 
-                ruta = partes[1]
-
+                #ruta = partes[1]
+                ruta = os.path.join(
+                directorio_actual,
+                partes[1]
+                )
                 archivos = os.listdir(ruta)
 
                 if not archivos:
-                    return "Directorio vacío"
+                    return "Directorio vacío",directorio_actual
 
-                return "\n".join(archivos)
+                return "\n".join(archivos),directorio_actual
 
         except FileNotFoundError:
 
-            return "Ruta inexistente"
+            return "Ruta inexistente",directorio_actual
 
         except Exception as e:
 
-            return f"ERROR: {e}"
+            return f"ERROR: {e}",directorio_actual
 
     # 
     elif cmd == "cat":
 
         if len(partes) < 2:
-            return "ERROR: falta nombre del archivo"
+            return "ERROR: falta nombre del archivo",directorio_actual
 
         archivo = partes[1]
 
         try:
 
-            with open(archivo, "r", encoding="utf-8") as f:
+            #with open(archivo, "r", encoding="utf-8") as f:
+
+            #este dcambio se hizo para que ahora ahora el cat busca en la carpeta donde esta el cliente y no en el server
+            ruta = os.path.join(
+            directorio_actual,
+            archivo
+                )
+
+            with open(ruta, "r", encoding="utf-8") as f:
+
+
+
 
                 contenido = f.read()
 
             if contenido == "":
-                return "[Archivo vacío]"
+                return "[Archivo vacío]",directorio_actual
 
-            return contenido
+            return contenido,directorio_actual
 
         except FileNotFoundError:
 
-            return "ERROR: archivo no encontrado"
+            return "ERROR: archivo no encontrado",directorio_actual
 
         except Exception as e:
 
-            return f"ERROR: {e}"
+            return f"ERROR: {e}",directorio_actual
 
-    return "ERROR: comando no válido. Escriba 'help'"
+    return "ERROR: comando no válido. Escriba 'help'", directorio_actual
 
 
 
 # Cliente
 def atender_cliente(conn, addr):
 
+    #ahora cada  hilo tiene su propia copia de esta variable
+    directorio_actual = os.getcwd()
     #evita errores
     usuario = None
 
@@ -370,8 +419,13 @@ def atender_cliente(conn, addr):
                 break
 
                 #aca llamo a la funcion ejercutar_comando y hace lo que le pidieron, ls,pwd etc
-            respuesta = ejecutar_comando(data)
+            #respuesta = ejecutar_comando(data)
 
+            #cambio para que ahora reciba comando y el directorio
+            respuesta, directorio_actual = ejecutar_comando(
+                data,
+                directorio_actual
+            )
             #envia al cliente la respuesta
             conn.send(
                 respuesta.encode("utf-8")
@@ -413,33 +467,39 @@ def iniciar_servidor():
     )
 
     admin_thread.start()
-
-    while True:
-        conn, addr = server.accept()
-        # CONTROL DE LIMITE
-        if len(clientes_conectados) >= MAXCLIENTES:
-                #caso que fue rechazado
-            print(
-                f"[RECHAZADO] {addr} - servidor lleno"
-            )
-            conn.send(
-                    "Servidor lleno. Intente más tarde.".encode("utf-8")
+    try:
+        while True:
+            conn, addr = server.accept()
+            # CONTROL DE LIMITE
+            if len(clientes_conectados) >= MAXCLIENTES:
+                    #caso que fue rechazado
+                print(
+                    f"[RECHAZADO] {addr} - servidor lleno"
                 )
-            conn.close()
-            continue
-            #creo hilos por clientes 
-        thread = threading.Thread(
-                target=atender_cliente,
-                args=(conn, addr)
-            )
+                conn.send(
+                        "Servidor lleno. Intente más tarde.".encode("utf-8")
+                    )
+                conn.close()
+                continue
+                #creo hilos por clientes 
+            thread = threading.Thread(
+                    target=atender_cliente,
+                    args=(conn, addr)
+                )
 
-        thread.start()
+            thread.start()
 
-        #muestro la cantidad de hilos activos
-        print(
-                f"[HILOS ACTIVOS] {threading.active_count() - 1}"
-            )
+            #muestro la cantidad de hilos activos
+            print(
+                    f"[HILOS ACTIVOS] {threading.active_count() - 1}"
+                )
+    except KeyboardInterrupt:
 
+        print("\n[APAGANDO SERVIDOR]")
+
+    finally:
+        server.close()
+    
 
 if __name__ == "__main__":
     iniciar_servidor()
